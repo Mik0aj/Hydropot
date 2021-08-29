@@ -1,6 +1,6 @@
 # Hydropot 
 <img src="Images/doniczka_dzien.png" width="300">
-<img src="Images/doniczka_noc" width="300">
+<img src="Images/doniczka_noc.png" width="300">
 Designed for my Embedded system classes, a while ago. The hydro pot measures temperature, humidity, water and light level. Depending on these values it turn on the Leds and displays the values. Timelapse of working system.
 https://www.youtube.com/watch?v=TiQmTjOGO_o
 ## Schematics
