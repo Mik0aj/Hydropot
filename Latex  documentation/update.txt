@@ -1,0 +1,66 @@
+////////////////////////////////////////Dodalem zmienne odpowiedzialne za uruchamianie odpowiednich funkcji
+const long eventTime_1_Light = 100;
+const long eventTime_2_Temp = 10000; //at least 2 seconds beetween data gathering
+const long eventTime_3_Water = 60000;
+const long eventTime_4_Serial = 15000;
+
+unsigned long previousTime_1 = 0;
+unsigned long previousTime_2 = 0;
+unsigned long previousTime_3 = 0;
+unsigned long previousTime_4 = 0;
+
+////////////////////////////////////////Zmienilem funkcje setup aby wartosci byly odczytywane od startu programu
+void setup()
+{
+  Serial.begin(9600);
+  Serial.println("Powering on the Hydropot");
+  values[2] = sensor.readTemp();
+  values[2] = sensor.readhumidity();
+  Serial.println("Preparing DHT11");
+  delay(2500);
+  Serial.println("Initial Sensor Read");
+  values[0] = sensor.readWaterLevel();
+  values[1] = sensor.readLight();
+  values[2] = sensor.readTemp();
+  values[2] = sensor.readhumidity();
+  proportions = map((analogRead(A3)), 0, 1023, 3, 9);
+  readSensorsVerbose();
+}
+//////////////////////////////////////Glowne zmiany nastapily w loop
+void loop()
+{
+  proportions = map((analogRead(A3)), 0, 1023, 3, 9);
+  light = HydroLight(proportions);
+  unsigned long currentTime = millis();
+  ////////////////////////////LIGHTS
+  if ( currentTime - previousTime_1 >= eventTime_1_Light) {
+    values[1] = sensor.readLight();
+
+    if (values[1] > 75) {
+      analogWrite(10, light.getBlue());
+      analogWrite(11, light.getRed());
+    }
+    else {
+      analogWrite(10, 0);
+      analogWrite(11, 0);
+    }
+    previousTime_1 = currentTime;
+  }
+  ////////////////////////////TEMP
+
+  if ( currentTime - previousTime_2 >= eventTime_2_Temp) {
+    values[2] = sensor.readTemp();
+    values[3] = sensor.readhumidity();
+    previousTime_2 = currentTime;
+  }
+  ////////////////////////////WATER
+  if ( currentTime - previousTime_3 >= eventTime_3_Water) {
+    values[0] = sensor.readWaterLevel();
+    previousTime_3 = currentTime;
+  }
+  ////////////////////////////SERIAL
+  if ( currentTime - previousTime_4 >= eventTime_4_Serial) {
+    readSensorsVerbose();
+    previousTime_4 = currentTime;
+  }
+}

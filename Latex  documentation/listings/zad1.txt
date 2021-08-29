@@ -1,0 +1,174 @@
+#include <LiquidCrystal.h>
+
+#include <Adafruit_NeoPixel.h>
+
+class HydroLight{
+  private:
+  int red;
+  int blue;
+    public:
+
+  // x red to 1 blue proportions
+  HydroLight(int x){
+    red= 255;
+    blue=255/x;
+  }
+  int getBlue(){return blue;}
+  int getRed(){return red;}
+
+};
+
+class HydroSensors{
+  	private:
+	int distPin;
+  	int photoResPin;
+  	int ambientPin;
+    int photoDiodePin;
+  	int tempPin;
+  public:
+  HydroSensors(int distPin,int photoResPin,int ambientPin,int photoDiodePin,int tempPin){
+  	this->distPin=distPin;
+    this->photoResPin=photoResPin;
+    this->ambientPin=ambientPin;
+    this->photoDiodePin=photoDiodePin;
+    this->tempPin=tempPin;
+	pinMode(photoResPin, INPUT_PULLUP);
+    pinMode(ambientPin, INPUT_PULLUP);
+	pinMode(photoDiodePin, INPUT_PULLUP);
+	pinMode(tempPin, INPUT);
+  }
+  float readDistance()
+  {
+    pinMode(distPin, OUTPUT);
+    // Clear the trigger
+    digitalWrite(distPin, LOW);
+    delayMicroseconds(2);
+    // Sets the trigger pin to HIGH state for 10 microseconds
+    digitalWrite(distPin, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(distPin, LOW);
+    pinMode(distPin, INPUT);
+    // Reads the echo pin, and returns the sound wave travel time in microseconds
+    return 0.01723 * pulseIn(distPin, HIGH);
+  }
+    float readLight(){
+     int res=map(((analogRead(photoResPin))), 22,908, 0, 100);
+     int amb=map(((analogRead(ambientPin))), 1023,0 , 0, 100);
+     int phot=map(((analogRead(photoDiodePin))), 974,0 , 0, 100);
+    return (res+amb+phot)/3;
+  }
+  float readTemp(){
+    return map(((analogRead(tempPin) - 20) * 3.04), 0, 1023, -40, 125);
+  }
+  void readSensors(float *arr) 
+	{ 
+    arr[0] = readDistance(); 
+    arr[1] = readLight(); 
+    arr[2] = readTemp(); 
+} 
+  
+};
+
+int Motor1 = 2;
+int lights = 3;
+int pixellight = 3;
+int NUMPIXELS =  12 ;
+int potVal;
+
+String msg="";
+float values[3];
+HydroLight light={3};
+HydroSensors sensor={14,15,17,18,16};
+LiquidCrystal lcd(13, 12, 11, 10, 9, 8);
+Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, pixellight, NEO_GRB + NEO_KHZ800);
+
+void turnPump() {
+  digitalWrite(Motor1, HIGH);
+
+}
+void stopPump() {
+  digitalWrite(Motor1, LOW);
+}
+
+void setup()
+{
+  Serial.begin(9600);
+  Serial.println(sensor.readTemp());
+  lcd.begin(16, 2);
+	pinMode(lights, OUTPUT);
+    pixels.begin();
+}
+
+void lcdUpdate(){
+	lcd.setCursor(0,0);
+	lcd.print("dst");
+   lcd.setCursor(0,1);
+    lcd.print(round(values[0]));
+     lcd.setCursor(6,0);
+    lcd.print("lum");
+  lcd.setCursor(6,1);
+    lcd.print(round(values[1]));
+    lcd.setCursor(12,0);
+    lcd.print("tmp");
+  lcd.setCursor(12,1);
+    lcd.println(round(values[2]));
+  	Serial.print("distance =");
+    Serial.print(values[0]);
+    Serial.print(" luminance =");
+    Serial.print(values[1]);
+    Serial.print(" temperature =");
+    Serial.print(values[2]);
+    Serial.print(" proportions =");
+    Serial.println(potVal);
+
+}
+
+void loop()
+{
+  potVal = analogRead(A5);
+  potVal=map(potVal, 0, 1023, 1, 9);
+  light=HydroLight(potVal);
+  
+	sensor.readSensors(values);
+ lcdUpdate();
+  if(values[0]>10){
+  	turnPump();
+  }
+  else{
+    stopPump();
+  }
+
+  if(values[1]>50){
+     for (int i=0; i < NUMPIXELS; i++) {
+    pixels.setPixelColor(i, pixels.Color(light.getRed(), 0, light.getBlue()));
+
+
+  }
+        pixels.show();
+
+  }
+  else{
+     for (int i=0; i < NUMPIXELS; i++) {
+    pixels.setPixelColor(i, pixels.Color(0, 0, 0));
+
+
+  }
+      pixels.show();
+}
+  delay(50);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
